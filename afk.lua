@@ -1,214 +1,345 @@
-
 --[[
-    Anti-AFK V1 + AFK Mode
-    Original by batus / forked by Evxn
-    Modified: added AFK mode toggle
+    ╔═══════════════════════════════════════════╗
+    ║   ANTI-AFK V3 — Modern UI Edition         ║
+    ║   Author: sdfsd2648                       ║
+    ║   Original concept: batus / Evxn          ║
+    ║   Features: Anti-AFK, AFK Mode, FPS,      ║
+    ║   Ping, Timer, Draggable, Dark Theme      ║
+    ╚═══════════════════════════════════════════╝
 ]]
 
 repeat wait() until game:IsLoaded() and game.Players and game.Players.LocalPlayer and game.Players.LocalPlayer.Character
 
-if getgenv().AntiAfkExecuted and game.CoreGui:FindFirstChild("thisoneissocoldww") then
-    getgenv().AntiAfkExecuted = false
-    getgenv().zamanbaslaticisi = false
+-- Защита от повторного запуска
+if getgenv().AntiAfkV3Running and game.CoreGui:FindFirstChild("AntiAfkV3UI") then
+    getgenv().AntiAfkV3Running = false
+    getgenv().AntiAfkTimer = false
     getgenv().AfkMode = false
-    game.CoreGui.thisoneissocoldww:Destroy()
+    game.CoreGui.AntiAfkV3UI:Destroy()
+    wait(0.2)
 end
 
-getgenv().AntiAfkExecuted = true
-getgenv().zamanbaslaticisi = true
+getgenv().AntiAfkV3Running = true
+getgenv().AntiAfkTimer = true
 getgenv().AfkMode = false
 
-local thisoneissocoldww = Instance.new("ScreenGui")
-local madebybloodofbatus = Instance.new("Frame")
-local UICornerw = Instance.new("UICorner")
-local DestroyButton = Instance.new("TextButton")
-local uselesslabelone = Instance.new("TextLabel")
-local timerlabel = Instance.new("TextLabel")
-local uselesslabeltwo = Instance.new("TextLabel")
-local fpslabel = Instance.new("TextLabel")
-local uselesslabelthree = Instance.new("TextLabel")
-local pinglabel = Instance.new("TextLabel")
-local uselessframeone = Instance.new("Frame")
-local UICornerww = Instance.new("UICorner")
-local uselesslabelfour = Instance.new("TextLabel")
+-- ═══════════════ СЕРВИСЫ ═══════════════
+local Players           = game:GetService("Players")
+local RunService        = game:GetService("RunService")
+local UserInputService  = game:GetService("UserInputService")
+local TweenService      = game:GetService("TweenService")
+local Stats             = game:GetService("Stats")
+local VirtualUser       = game:GetService("VirtualUser")
+local Lighting          = game:GetService("Lighting")
 
--- КНОПКА AFK (новая)
-local AfkButton = Instance.new("TextButton")
-local UICornerAfk = Instance.new("UICorner")
+-- ═══════════════ ЦВЕТА ═══════════════
+local C = {
+    BG        = Color3.fromRGB(18, 18, 24),
+    BG2       = Color3.fromRGB(28, 28, 38),
+    Card      = Color3.fromRGB(38, 38, 50),
+    Accent    = Color3.fromRGB(130, 100, 255),
+    Accent2   = Color3.fromRGB(200, 100, 255),
+    Text      = Color3.fromRGB(240, 240, 248),
+    TextDim   = Color3.fromRGB(150, 150, 170),
+    Green     = Color3.fromRGB(80, 220, 140),
+    Red       = Color3.fromRGB(255, 90, 110),
+    Yellow    = Color3.fromRGB(255, 200, 80),
+    Cyan      = Color3.fromRGB(80, 220, 255),
+}
 
--- Properties:
+-- ═══════════════ ГЛАВНОЕ ОКНО ═══════════════
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AntiAfkV3UI"
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = game.CoreGui
 
-thisoneissocoldww.Name = "thisoneissocoldww"
-thisoneissocoldww.Parent = game.CoreGui
-thisoneissocoldww.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+local Main = Instance.new("Frame")
+Main.Name = "Main"
+Main.AnchorPoint = Vector2.new(0.5, 0.5)
+Main.Position = UDim2.new(0.5, 0, 0.5, 0)
+Main.Size = UDim2.new(0, 320, 0, 260)
+Main.BackgroundColor3 = C.BG
+Main.BorderSizePixel = 0
+Main.Parent = ScreenGui
 
-madebybloodofbatus.Name = "madebybloodofbatus"
-madebybloodofbatus.Parent = thisoneissocoldww
-madebybloodofbatus.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-madebybloodofbatus.Position = UDim2.new(0.0854133144, 0, 0.13128835, 0)
-madebybloodofbatus.Size = UDim2.new(0, 225, 0, 130)
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 16)
+MainCorner.Parent = Main
 
-UICornerw.Name = "UICornerw"
-UICornerw.Parent = madebybloodofbatus
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = C.Accent
+MainStroke.Thickness = 1.5
+MainStroke.Transparency = 0.35
+MainStroke.Parent = Main
 
-DestroyButton.Name = "DestroyButton"
-DestroyButton.Parent = madebybloodofbatus
-DestroyButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-DestroyButton.BackgroundTransparency = 1.000
-DestroyButton.Position = UDim2.new(0.871702373, 0, 0.0245379955, 0)
-DestroyButton.Size = UDim2.new(0, 27, 0, 15)
-DestroyButton.Font = Enum.Font.SourceSans
-DestroyButton.Text = "X"
-DestroyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-DestroyButton.TextSize = 14.000
+local MainGrad = Instance.new("UIGradient")
+MainGrad.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, C.BG),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(30, 22, 50)),
+})
+MainGrad.Rotation = 130
+MainGrad.Parent = Main
 
-DestroyButton.MouseButton1Click:connect(function()
-    getgenv().AntiAfkExecuted = false
-    getgenv().zamanbaslaticisi = false
-    getgenv().AfkMode = false
-    wait(0.1)
-    thisoneissocoldww:Destroy()
-end)
+-- ═══════════════ ЗАГОЛОВОК ═══════════════
+local Header = Instance.new("Frame")
+Header.Name = "Header"
+Header.Size = UDim2.new(1, 0, 0, 46)
+Header.BackgroundColor3 = C.BG2
+Header.BackgroundTransparency = 0.2
+Header.BorderSizePixel = 0
+Header.Parent = Main
 
-uselesslabelone.Name = "uselesslabelone"
-uselesslabelone.Parent = madebybloodofbatus
-uselesslabelone.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-uselesslabelone.BackgroundTransparency = 1.000
-uselesslabelone.Position = UDim2.new(0.302473009, 0, 0, 0)
-uselesslabelone.Size = UDim2.new(0, 110, 0, 24)
-uselesslabelone.Font = Enum.Font.SourceSans
-uselesslabelone.Text = "Anti Afk V1 By Evxn#6765"
-uselesslabelone.TextColor3 = Color3.fromRGB(255, 255, 255)
-uselesslabelone.TextSize = 13.000
+local HeaderCorner = Instance.new("UICorner")
+HeaderCorner.CornerRadius = UDim.new(0, 16)
+HeaderCorner.Parent = Header
 
-timerlabel.Name = "timerlabel"
-timerlabel.Parent = madebybloodofbatus
-timerlabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-timerlabel.BackgroundTransparency = 1.000
-timerlabel.Position = UDim2.new(0.65344125, 0, 0.68194294, 0)
-timerlabel.Size = UDim2.new(0, 60, 0, 24)
-timerlabel.Font = Enum.Font.SourceSans
-timerlabel.Text = "0:0:0"
-timerlabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-timerlabel.TextSize = 14.000
+local HeaderFix = Instance.new("Frame")
+HeaderFix.Size = UDim2.new(1, 0, 0, 16)
+HeaderFix.Position = UDim2.new(0, 0, 1, -16)
+HeaderFix.BackgroundColor3 = C.BG2
+HeaderFix.BackgroundTransparency = 0.2
+HeaderFix.BorderSizePixel = 0
+HeaderFix.Parent = Header
 
-uselesslabeltwo.Name = "uselesslabeltwo"
-uselesslabeltwo.Parent = madebybloodofbatus
-uselesslabeltwo.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-uselesslabeltwo.BackgroundTransparency = 1.000
-uselesslabeltwo.Position = UDim2.new(0.038864471, 0, 0.273806685, 0)
-uselesslabeltwo.Size = UDim2.new(0, 29, 0, 24)
-uselesslabeltwo.Font = Enum.Font.SourceSans
-uselesslabeltwo.Text = "Ping: "
-uselesslabeltwo.TextColor3 = Color3.fromRGB(255, 255, 255)
-uselesslabeltwo.TextSize = 14.000
+-- Пульсирующая точка статуса
+local Dot = Instance.new("Frame")
+Dot.Size = UDim2.new(0, 9, 0, 9)
+Dot.Position = UDim2.new(0, 18, 0.5, -4.5)
+Dot.BackgroundColor3 = C.Green
+Dot.BorderSizePixel = 0
+Dot.Parent = Header
 
-fpslabel.Name = "fpslabel"
-fpslabel.Parent = madebybloodofbatus
-fpslabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-fpslabel.BackgroundTransparency = 1.000
-fpslabel.Position = UDim2.new(0.724226236, 0, 0.258796299, 0)
-fpslabel.Size = UDim2.new(0, 55, 0, 24)
-fpslabel.Font = Enum.Font.SourceSans
-fpslabel.Text = "0"
-fpslabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-fpslabel.TextSize = 14.000
+local DotCorner = Instance.new("UICorner")
+DotCorner.CornerRadius = UDim.new(1, 0)
+DotCorner.Parent = Dot
 
-uselesslabelthree.Name = "uselesslabelthree"
-uselesslabelthree.Parent = madebybloodofbatus
-uselesslabelthree.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-uselesslabelthree.BackgroundTransparency = 1.000
-uselesslabelthree.Position = UDim2.new(0.506917477, 0, 0.252585167, 0)
-uselesslabelthree.Size = UDim2.new(0, 26, 0, 24)
-uselesslabelthree.Font = Enum.Font.SourceSans
-uselesslabelthree.Text = "Fps: "
-uselesslabelthree.TextColor3 = Color3.fromRGB(255, 255, 255)
-uselesslabelthree.TextSize = 14.000
-
-pinglabel.Name = "pinglabel"
-pinglabel.Parent = madebybloodofbatus
-pinglabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-pinglabel.BackgroundTransparency = 1.000
-pinglabel.Position = UDim2.new(0.20330891, 0, 0.271578127, 0)
-pinglabel.Size = UDim2.new(0, 55, 0, 24)
-pinglabel.Font = Enum.Font.SourceSans
-pinglabel.Text = "0"
-pinglabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-pinglabel.TextSize = 14.000
-pinglabel.TextWrapped = true
-
-uselessframeone.Name = "uselessframeone"
-uselessframeone.Parent = madebybloodofbatus
-uselessframeone.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-uselessframeone.Position = UDim2.new(0.00444444455, 0, 0.213312627, 0)
-uselessframeone.Size = UDim2.new(0, 224, 0, 5)
-
-UICornerww.CornerRadius = UDim.new(0, 50)
-UICornerww.Name = "UICornerww"
-UICornerww.Parent = uselessframeone
-
-uselesslabelfour.Name = "uselesslabelfour"
-uselesslabelfour.Parent = madebybloodofbatus
-uselesslabelfour.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-uselesslabelfour.BackgroundTransparency = 1.000
-uselesslabelfour.Position = UDim2.new(0.0580285639, 0, 0.65, 0)
-uselesslabelfour.Size = UDim2.new(0, 120, 0, 12)
-uselesslabelfour.Font = Enum.Font.SourceSans
-uselesslabelfour.Text = "Anti-Afk Auto Enabled"
-uselesslabelfour.TextColor3 = Color3.fromRGB(0, 255, 100)
-uselesslabelfour.TextSize = 13.000
-uselesslabelfour.TextXAlignment = Enum.TextXAlignment.Left
-
--- КНОПКА AFK
-AfkButton.Name = "AfkButton"
-AfkButton.Parent = madebybloodofbatus
-AfkButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-AfkButton.Position = UDim2.new(0.058, 0, 0.80, 0)
-AfkButton.Size = UDim2.new(0, 95, 0, 22)
-AfkButton.Font = Enum.Font.SourceSansBold
-AfkButton.Text = "AFK: ВЫКЛ"
-AfkButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-AfkButton.TextSize = 13.000
-
-UICornerAfk.CornerRadius = UDim.new(0, 6)
-UICornerAfk.Parent = AfkButton
-
-AfkButton.MouseButton1Click:Connect(function()
-    getgenv().AfkMode = not getgenv().AfkMode
-    if getgenv().AfkMode then
-        AfkButton.Text = "AFK: ВКЛ"
-        AfkButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-        uselesslabelfour.Text = "AFK Mode ON — не двигайся"
-        uselesslabelfour.TextColor3 = Color3.fromRGB(255, 180, 0)
-    else
-        AfkButton.Text = "AFK: ВЫКЛ"
-        AfkButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        uselesslabelfour.Text = "Anti-Afk Auto Enabled"
-        uselesslabelfour.TextColor3 = Color3.fromRGB(0, 255, 100)
+task.spawn(function()
+    while Dot.Parent do
+        TweenService:Create(Dot, TweenInfo.new(0.9, Enum.EasingStyle.Sine), {BackgroundTransparency = 0.6}):Play()
+        wait(0.9)
+        if not Dot.Parent then break end
+        TweenService:Create(Dot, TweenInfo.new(0.9, Enum.EasingStyle.Sine), {BackgroundTransparency = 0}):Play()
+        wait(0.9)
     end
 end)
 
--- Перетаскивание
-local Drag = madebybloodofbatus
-gsCoreGui = game:GetService("CoreGui")
-gsTween = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local dragging, dragInput, dragStart, startPos
+-- Заголовок
+local Title = Instance.new("TextLabel")
+Title.BackgroundTransparency = 1
+Title.Position = UDim2.new(0, 36, 0, 0)
+Title.Size = UDim2.new(1, -140, 1, 0)
+Title.Font = Enum.Font.GothamBold
+Title.Text = "⚡ Anti-AFK V3"
+Title.TextColor3 = C.Text
+Title.TextSize = 15
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Header
 
-local function update(input)
-    local delta = input.Position - dragStart
-    local dragTime = 0.04
-    local SmoothDrag = {}
-    SmoothDrag.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    local dragSmoothFunction = gsTween:Create(Drag, TweenInfo.new(dragTime, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), SmoothDrag)
-    dragSmoothFunction:Play()
+-- Имя автора
+local Author = Instance.new("TextLabel")
+Author.BackgroundTransparency = 1
+Author.AnchorPoint = Vector2.new(1, 0.5)
+Author.Position = UDim2.new(1, -46, 0.5, 0)
+Author.Size = UDim2.new(0, 90, 0, 20)
+Author.Font = Enum.Font.GothamMedium
+Author.Text = "by sdfsd2648"
+Author.TextColor3 = C.Accent2
+Author.TextSize = 11
+Author.TextXAlignment = Enum.TextXAlignment.Right
+Author.Parent = Header
+
+-- Кнопка закрытия
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.AnchorPoint = Vector2.new(1, 0.5)
+CloseBtn.Position = UDim2.new(1, -12, 0.5, 0)
+CloseBtn.Size = UDim2.new(0, 24, 0, 24)
+CloseBtn.BackgroundColor3 = C.Red
+CloseBtn.BackgroundTransparency = 0.82
+CloseBtn.BorderSizePixel = 0
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.Text = "✕"
+CloseBtn.TextColor3 = C.Text
+CloseBtn.TextSize = 12
+CloseBtn.AutoButtonColor = false
+CloseBtn.Parent = Header
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(1, 0)
+CloseCorner.Parent = CloseBtn
+
+CloseBtn.MouseEnter:Connect(function()
+    TweenService:Create(CloseBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.4}):Play()
+end)
+CloseBtn.MouseLeave:Connect(function()
+    TweenService:Create(CloseBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.82}):Play()
+end)
+CloseBtn.MouseButton1Click:Connect(function()
+    getgenv().AntiAfkV3Running = false
+    getgenv().AntiAfkTimer = false
+    getgenv().AfkMode = false
+    ScreenGui:Destroy()
+end)
+
+-- ═══════════════ КАРТОЧКИ СТАТИСТИКИ ═══════════════
+local function makeCard(name, labelText, iconText, xPos, accentColor)
+    local Card = Instance.new("Frame")
+    Card.Name = name
+    Card.Position = UDim2.new(0, xPos, 0, 60)
+    Card.Size = UDim2.new(0, 90, 0, 66)
+    Card.BackgroundColor3 = C.Card
+    Card.BackgroundTransparency = 0.25
+    Card.BorderSizePixel = 0
+    Card.Parent = Main
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 12)
+    Corner.Parent = Card
+
+    local Stroke = Instance.new("UIStroke")
+    Stroke.Color = accentColor
+    Stroke.Thickness = 1
+    Stroke.Transparency = 0.6
+    Stroke.Parent = Card
+
+    local Icon = Instance.new("TextLabel")
+    Icon.BackgroundTransparency = 1
+    Icon.Size = UDim2.new(1, 0, 0, 18)
+    Icon.Position = UDim2.new(0, 0, 0, 8)
+    Icon.Font = Enum.Font.GothamMedium
+    Icon.Text = iconText .. " " .. labelText
+    Icon.TextColor3 = C.TextDim
+    Icon.TextSize = 10
+    Icon.Parent = Card
+
+    local Value = Instance.new("TextLabel")
+    Value.Name = "Value"
+    Value.BackgroundTransparency = 1
+    Value.Size = UDim2.new(1, 0, 0, 24)
+    Value.Position = UDim2.new(0, 0, 0, 30)
+    Value.Font = Enum.Font.GothamBold
+    Value.Text = "0"
+    Value.TextColor3 = accentColor
+    Value.TextSize = 17
+    Value.Parent = Card
+
+    return Value
 end
 
-Drag.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+local FpsValue  = makeCard("FpsCard",  "FPS",  "⚡", 16,  C.Yellow)
+local PingValue = makeCard("PingCard", "PING", "📶", 115, C.Cyan)
+local TimeValue = makeCard("TimeCard", "TIME", "⏱", 214, C.Green)
+
+-- ═══════════════ КНОПКА AFK ═══════════════
+local AfkBtn = Instance.new("TextButton")
+AfkBtn.Name = "AfkBtn"
+AfkBtn.Position = UDim2.new(0, 16, 0, 140)
+AfkBtn.Size = UDim2.new(0.5, -22, 0, 40)
+AfkBtn.BackgroundColor3 = C.Card
+AfkBtn.BackgroundTransparency = 0.15
+AfkBtn.BorderSizePixel = 0
+AfkBtn.Font = Enum.Font.GothamBold
+AfkBtn.Text = "😴 AFK MODE: OFF"
+AfkBtn.TextColor3 = C.Text
+AfkBtn.TextSize = 13
+AfkBtn.AutoButtonColor = false
+AfkBtn.Parent = Main
+
+local AfkCorner = Instance.new("UICorner")
+AfkCorner.CornerRadius = UDim.new(0, 10)
+AfkCorner.Parent = AfkBtn
+
+local AfkStroke = Instance.new("UIStroke")
+AfkStroke.Color = C.TextDim
+AfkStroke.Thickness = 1
+AfkStroke.Transparency = 0.6
+AfkStroke.Parent = AfkBtn
+
+-- ═══════════════ КНОПКА "КРУТИТЬСЯ" (фишка) ═══════════════
+local SpinBtn = Instance.new("TextButton")
+SpinBtn.Name = "SpinBtn"
+SpinBtn.Position = UDim2.new(0.5, 6, 0, 140)
+SpinBtn.Size = UDim2.new(0.5, -22, 0, 40)
+SpinBtn.BackgroundColor3 = C.Card
+SpinBtn.BackgroundTransparency = 0.15
+SpinBtn.BorderSizePixel = 0
+SpinBtn.Font = Enum.Font.GothamBold
+SpinBtn.Text = "🌀 SPIN: OFF"
+SpinBtn.TextColor3 = C.Text
+SpinBtn.TextSize = 13
+SpinBtn.AutoButtonColor = false
+SpinBtn.Parent = Main
+
+local SpinCorner = Instance.new("UICorner")
+SpinCorner.CornerRadius = UDim.new(0, 10)
+SpinCorner.Parent = SpinBtn
+
+local SpinStroke = Instance.new("UIStroke")
+SpinStroke.Color = C.TextDim
+SpinStroke.Thickness = 1
+SpinStroke.Transparency = 0.6
+SpinStroke.Parent = SpinBtn
+
+-- ═══════════════ СТАТУС-БАР ═══════════════
+local StatusBar = Instance.new("Frame")
+StatusBar.Name = "StatusBar"
+StatusBar.Position = UDim2.new(0, 16, 0, 192)
+StatusBar.Size = UDim2.new(1, -32, 0, 32)
+StatusBar.BackgroundColor3 = C.Card
+StatusBar.BackgroundTransparency = 0.35
+StatusBar.BorderSizePixel = 0
+StatusBar.Parent = Main
+
+local StatusCorner = Instance.new("UICorner")
+StatusCorner.CornerRadius = UDim.new(0, 10)
+StatusCorner.Parent = StatusBar
+
+local StatusStroke = Instance.new("UIStroke")
+StatusStroke.Color = C.Green
+StatusStroke.Thickness = 1
+StatusStroke.Transparency = 0.65
+StatusStroke.Parent = StatusBar
+
+local StatusText = Instance.new("TextLabel")
+StatusText.Name = "StatusText"
+StatusText.BackgroundTransparency = 1
+StatusText.Size = UDim2.new(1, -16, 1, 0)
+StatusText.Position = UDim2.new(0, 14, 0, 0)
+StatusText.Font = Enum.Font.GothamMedium
+StatusText.Text = "● Anti-AFK активен"
+StatusText.TextColor3 = C.Green
+StatusText.TextSize = 12
+StatusText.TextXAlignment = Enum.TextXAlignment.Left
+StatusText.Parent = StatusBar
+
+-- ═══════════════ ПОДПИСЬ ВНИЗУ ═══════════════
+local Footer = Instance.new("TextLabel")
+Footer.BackgroundTransparency = 1
+Footer.Position = UDim2.new(0, 0, 1, -22)
+Footer.Size = UDim2.new(1, 0, 0, 16)
+Footer.Font = Enum.Font.Gotham
+Footer.Text = "sdfsd2648 © 2025 · Anti-AFK V3"
+Footer.TextColor3 = C.TextDim
+Footer.TextSize = 10
+Footer.Parent = Main
+
+-- ═══════════════ ПЕРЕТАСКИВАНИЕ ═══════════════
+local dragging, dragInput, dragStart, startPos
+
+local function updateDrag(input)
+    local delta = input.Position - dragStart
+    Main.Position = UDim2.new(
+        startPos.X.Scale, startPos.X.Offset + delta.X,
+        startPos.Y.Scale, startPos.Y.Offset + delta.Y
+    )
+end
+
+Header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
-        startPos = Drag.Position
+        startPos = Main.Position
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
                 dragging = false
@@ -217,89 +348,163 @@ Drag.InputBegan:Connect(function(input)
     end
 end)
 
-Drag.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+Header.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement
+    or input.UserInputType == Enum.UserInputType.Touch then
         dragInput = input
     end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging and Drag.Size then
-        update(input)
+    if input == dragInput and dragging then
+        updateDrag(input)
     end
 end)
 
--- АНТИ-AFK
-local bbbatusxxxddddd = game:GetService("VirtualUser")
-
-game:GetService("Players").LocalPlayer.Idled:connect(function()
-    bbbatusxxxddddd:CaptureController()
-    bbbatusxxxddddd:ClickButton2(Vector2.new())
+-- ═══════════════ ЛОГИКА AFK MODE ═══════════════
+AfkBtn.MouseButton1Click:Connect(function()
+    getgenv().AfkMode = not getgenv().AfkMode
+    if getgenv().AfkMode then
+        AfkBtn.Text = "😴 AFK MODE: ON"
+        AfkBtn.BackgroundColor3 = C.Red
+        AfkStroke.Color = C.Red
+        StatusText.Text = "● AFK MODE — персонаж активен"
+        StatusText.TextColor3 = C.Yellow
+        StatusStroke.Color = C.Yellow
+    else
+        AfkBtn.Text = "😴 AFK MODE: OFF"
+        AfkBtn.BackgroundColor3 = C.Card
+        AfkStroke.Color = C.TextDim
+        StatusText.Text = "● Anti-AFK активен"
+        StatusText.TextColor3 = C.Green
+        StatusStroke.Color = C.Green
+    end
 end)
 
--- AFK MODE (двигает персонажа чтобы не кикнуло, если нужно)
-game:GetService("RunService").Heartbeat:Connect(function()
-    if getgenv().AfkMode then
-        local plr = game.Players.LocalPlayer
-        if plr and plr.Character and plr.Character:FindFirstChild("Humanoid") then
-            plr.Character.Humanoid.Jump = true
+AfkBtn.MouseEnter:Connect(function()
+    if not getgenv().AfkMode then
+        TweenService:Create(AfkBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
+    end
+end)
+AfkBtn.MouseLeave:Connect(function()
+    TweenService:Create(AfkBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.15}):Play()
+end)
+
+-- ═══════════════ ФИШКА: SPIN MODE ═══════════════
+-- Крутит камеру вокруг персонажа — выглядит как активность
+getgenv().SpinMode = false
+
+SpinBtn.MouseButton1Click:Connect(function()
+    getgenv().SpinMode = not getgenv().SpinMode
+    if getgenv().SpinMode then
+        SpinBtn.Text = "🌀 SPIN: ON"
+        SpinBtn.BackgroundColor3 = C.Accent
+        SpinStroke.Color = C.Accent2
+    else
+        SpinBtn.Text = "🌀 SPIN: OFF"
+        SpinBtn.BackgroundColor3 = C.Card
+        SpinStroke.Color = C.TextDim
+    end
+end)
+
+SpinBtn.MouseEnter:Connect(function()
+    if not getgenv().SpinMode then
+        TweenService:Create(SpinBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
+    end
+end)
+SpinBtn.MouseLeave:Connect(function()
+    TweenService:Create(SpinBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.15}):Play()
+end)
+
+-- Логика SPIN — медленно вращаем камеру
+RunService.RenderStepped:Connect(function(dt)
+    if getgenv().SpinMode then
+        local cam = workspace.CurrentCamera
+        if cam then
+            local cf = cam.CFrame
+            local rot = CFrame.Angles(0, math.rad(30) * dt, 0)
+            cam.CFrame = cf * rot
         end
     end
 end)
 
--- FPS
-local FPSsLabel = fpslabel
-local RunService = game:GetService("RunService")
-local RenderStepped = RunService.RenderStepped
-local sec = nil
-local FPS = {}
-
-local function fre()
-    local fr = tick()
-    for index = #FPS,1,-1 do
-        FPS[index + 1] = (FPS[index] >= fr - 1) and FPS[index] or nil
-    end
-    FPS[1] = fr
-    local fps = (tick() - sec >= 1 and #FPS) or (#FPS / (tick() - sec))
-    fps = math.floor(fps)
-    fpslabel.Text = fps
-end
-
-sec = tick()
-RenderStepped:Connect(fre)
-
--- PING
-spawn(function()
-    repeat
-        wait(1)
-        local ping = tonumber(game:GetService("Stats"):FindFirstChild("PerformanceStats").Ping:GetValue())
-        ping = math.floor(ping)
-        pinglabel.Text = ping
-    until pinglabel == nil
+-- ═══════════════ АНТИ-AFK (основной) ═══════════════
+Players.LocalPlayer.Idled:Connect(function()
+    VirtualUser:CaptureController()
+    VirtualUser:ClickButton2(Vector2.new())
 end)
 
--- ТАЙМЕР
-local saniye = 0
-local dakika = 0
-local saat = 0
+-- Логика AFK-режима — лёгкие прыжки
+RunService.Heartbeat:Connect(function()
+    if getgenv().AfkMode then
+        local plr = Players.LocalPlayer
+        if plr and plr.Character then
+            local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+            if hum and hum.Health > 0 then
+                hum.Jump = true
+            end
+        end
+    end
+end)
 
-getgenv().zamanbaslaticisi = true
+-- ═══════════════ FPS СЧЁТЧИК ═══════════════
+local frames = {}
+local lastSec = tick()
 
-while true do
-    if getgenv().zamanbaslaticisi then
-        saniye = saniye + 1
+RunService.RenderStepped:Connect(function()
+    local now = tick()
+    table.insert(frames, now)
+    for i = #frames, 1, -1 do
+        if frames[i] < now - 1 then
+            table.remove(frames, i)
+        end
+    end
+    if now - lastSec >= 1 then
+        local fps = #frames
+        FpsValue.Text = tostring(fps)
+        -- Меняем цвет в зависимости от FPS
+        if fps >= 50 then
+            FpsValue.TextColor3 = C.Green
+        elseif fps >= 25 then
+            FpsValue.TextColor3 = C.Yellow
+        else
+            FpsValue.TextColor3 = C.Red
+        end
+        lastSec = now
+    end
+end)
+
+-- ═══════════════ PING СЧЁТЧИК ═══════════════
+task.spawn(function()
+    while ScreenGui.Parent do
         wait(1)
+        local ok, ping = pcall(function()
+            return Stats.PerformanceStats.Ping:GetValue()
+        end)
+        if ok and ping then
+            local ms = math.floor(ping)
+            PingValue.Text = tostring(ms)
+            if ms < 100 then
+                PingValue.TextColor3 = C.Green
+            elseif ms < 250 then
+                PingValue.TextColor3 = C.Yellow
+            else
+                PingValue.TextColor3 = C.Red
+            end
+        end
     end
+end)
 
-    if saniye >= 60 then
-        saniye = 0
-        dakika = dakika + 1
+-- ═══════════════ ТАЙМЕР ═══════════════
+task.spawn(function()
+    local s, m, h = 0, 0, 0
+    while ScreenGui.Parent do
+        wait(1)
+        if getgenv().AntiAfkTimer then
+            s = s + 1
+            if s >= 60 then s = 0; m = m + 1 end
+            if m >= 60 then m = 0; h = h + 1 end
+            TimeValue.Text = string.format("%d:%02d:%02d", h, m, s)
+        end
     end
-
-    if dakika >= 60 then
-        dakika = 0
-        saat = saat + 1
-    end
-
-    timerlabel.Text = saat..":"..dakika..":"..saniye
-end
+end)
